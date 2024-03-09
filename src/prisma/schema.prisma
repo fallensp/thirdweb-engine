@@ -1,0 +1,178 @@
+datasource db {
+  url      = env("POSTGRES_CONNECTION_URL")
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Configuration {
+  id                                 String  @id @default("default") @map("id")
+  // Chains
+  chainOverrides                     String? @map("chainOverrides")
+  // Tx Processing
+  minTxsToProcess                    Int     @map("minTxsToProcess")
+  maxTxsToProcess                    Int     @map("maxTxsToProcess")
+  // Tx Updates
+  minedTxListenerCronSchedule        String? @map("minedTxsCronSchedule")
+  maxTxsToUpdate                     Int     @map("maxTxsToUpdate")
+  // Tx Retries
+  retryTxListenerCronSchedule        String? @map("retryTxsCronSchedule")
+  minEllapsedBlocksBeforeRetry       Int     @map("minEllapsedBlocksBeforeRetry")
+  maxFeePerGasForRetries             String  @map("maxFeePerGasForRetries")
+  maxPriorityFeePerGasForRetries     String  @map("maxPriorityFeePerGasForRetries")
+  maxRetriesPerTx                    Int     @map("maxRetriesPerTx")
+  // AWS
+  awsAccessKeyId                     String? @map("awsAccessKeyId")
+  awsSecretAccessKey                 String? @map("awsSecretAccessKey")
+  awsRegion                          String? @map("awsRegion")
+  // GCP
+  gcpApplicationProjectId            String? @map("gcpApplicationProjectId")
+  gcpKmsLocationId                   String? @map("gcpKmsLocationId")
+  gcpKmsKeyRingId                    String? @map("gcpKmsKeyRingId")
+  gcpApplicationCredentialEmail      String? @map("gcpApplicationCredentialEmail")
+  gcpApplicationCredentialPrivateKey String? @map("gcpApplicationCredentialPrivateKey")
+  // Auth
+  authDomain                         String  @default("") @map("authDomain") // TODO: Remove defaults on major
+  authWalletEncryptedJson            String  @default("") @map("authWalletEncryptedJson") // TODO: Remove defaults on major
+  // Webhook
+  webhookUrl                         String? @map("webhookUrl")
+  webhookAuthBearerToken             String? @map("webhookAuthBearerToken")
+  // Wallet balance
+  minWalletBalance                   String  @default("20000000000000000") @map("minWalletBalance")
+  accessControlAllowOrigin           String  @default("https://thirdweb.com,https://embed.ipfscdn.io") @map("accessControlAllowOrigin")
+  clearCacheCronSchedule             String  @default("*/30 * * * * *") @map("clearCacheCronSchedule")
+
+  @@map("configuration")
+}
+
+model Permissions {
+  walletAddress String  @id @map("walletAddress")
+  permissions   String  @map("permissions")
+  label         String? @map("label")
+
+  @@map("permissions")
+}
+
+model Tokens {
+  id            String    @id @map("id")
+  tokenMask     String    @map("tokenMask")
+  walletAddress String    @map("walletAddress")
+  createdAt     DateTime  @default(now()) @map("createdAt")
+  expiresAt     DateTime  @map("expiresAt")
+  revokedAt     DateTime? @map("revokedAt")
+  isAccessToken Boolean   @map("isAccessToken")
+  label         String?   @map("label")
+
+  @@map("tokens")
+}
+
+model WalletDetails {
+  address            String  @id @map("address")
+  type               String  @map("type")
+  label              String? @map("label")
+  // Local
+  encryptedJson      String? @map("encryptedJson")
+  // KMS
+  awsKmsKeyId        String? @map("awsKmsKeyId")
+  awsKmsArn          String? @map("awsKmsArn")
+  // GCP
+  gcpKmsKeyRingId    String? @map("gcpKmsKeyRingId") @db.VarChar(50)
+  gcpKmsKeyId        String? @map("gcpKmsKeyId") @db.VarChar(50)
+  gcpKmsKeyVersionId String? @map("gcpKmsKeyVersionId") @db.VarChar(20)
+  gcpKmsLocationId   String? @map("gcpKmsLocationId") @db.VarChar(20)
+  gcpKmsResourcePath String? @map("gcpKmsResourcePath") @db.Text
+
+  @@map("wallet_details")
+}
+
+model WalletNonce {
+  address String @map("address")
+  chainId String @map("chainId")
+  nonce   Int    @default(0) @map("nonce")
+
+  @@id([address, chainId])
+  @@map("wallet_nonce")
+}
+
+model Transactions {
+  id                        String    @id @default(uuid()) @map("id")
+  groupId                   String?   @map("groupId")
+  chainId                   String    @map("chainId")
+  // Shared
+  data                      String?   @map("data")
+  value                     String?   @map("value")
+  gasLimit                  String?   @map("gasLimit")
+  nonce                     Int?      @map("nonce")
+  maxFeePerGas              String?   @map("maxFeePerGas")
+  maxPriorityFeePerGas      String?   @map("maxPriorityFeePerGas")
+  // Transaction Details
+  fromAddress               String?   @map("fromAddress")
+  toAddress                 String?   @map("toAddress")
+  gasPrice                  String?   @map("gasPrice")
+  transactionType           Int?      @map("transactionType")
+  transactionHash           String?   @map("transactionHash")
+  onChainTxStatus           Int?      @map("onChainTxStatus")
+  // User Operation
+  signerAddress             String?   @map("signerAddress")
+  accountAddress            String?   @map("accountAddress")
+  target                    String?   @map("target")
+  sender                    String?   @map("sender")
+  initCode                  String?   @map("initCode")
+  callData                  String?   @map("callData")
+  callGasLimit              String?   @map("callGasLimit")
+  verificationGasLimit      String?   @map("verificationGasLimit")
+  preVerificationGas        String?   @map("preVerificationGas")
+  paymasterAndData          String?   @map("paymasterAndData")
+  userOpHash                String?   @map("userOpHash")
+  // Enriched Data
+  functionName              String?   @map("functionName")
+  functionArgs              String?   @map("functionArgs")
+  extension                 String?   @map("extension")
+  // TODO: These shouldn't be in here...
+  deployedContractAddress   String?   @map("deployedContractAddress")
+  deployedContractType      String?   @map("deployedContractType")
+  // Timestamps
+  queuedAt                  DateTime  @default(now()) @map("queuedAt")
+  processedAt               DateTime? @map("processedAt")
+  sentAt                    DateTime? @map("sentAt")
+  minedAt                   DateTime? @map("minedAt")
+  cancelledAt               DateTime? @map("cancelledAt")
+  // Retries
+  retryCount                Int       @default(0) @map("retryCount")
+  retryGasValues            Boolean?  @default(false) @map("retryGasValues")
+  retryMaxPriorityFeePerGas String?   @map("retryMaxPriorityFeePerGas")
+  retryMaxFeePerGas         String?   @map("retryMaxFeePerGas")
+  // Error
+  errorMessage              String?   @map("errorMessage")
+  // Block Numbers
+  sentAtBlockNumber         Int?      @map("sentAtBlockNumber")
+  blockNumber               Int?      @map("blockNumber")
+
+  @@map("transactions")
+}
+
+model Webhooks {
+  id        Int       @id @default(autoincrement()) @map("id")
+  name      String?   @map("name")
+  url       String    @map("url")
+  secret    String    @map("secret")
+  eventType String    @map("evenType")
+  createdAt DateTime  @default(now()) @map("createdAt")
+  updatedAt DateTime  @updatedAt @map("updatedAt")
+  revokedAt DateTime? @map("revokedAt")
+
+  @@map("webhooks")
+}
+
+model Relayers {
+  id                   String  @id @default(uuid()) @map("id")
+  name                 String? @map("name")
+  chainId              String  @map("chainId")
+  backendWalletAddress String  @map("backendWalletAddress")
+  allowedContracts     String? @map("allowedContracts")
+  allowedForwarders    String? @map("allowedForwarders")
+
+  @@map("relayers")
+}

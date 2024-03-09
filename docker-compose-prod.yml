@@ -1,0 +1,7 @@
+version: "3.8"
+services:
+  engine:
+    build:
+      context: .
+      target: prod
+    image: thirdweb/engine:0.1.0
